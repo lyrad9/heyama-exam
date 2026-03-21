@@ -11,20 +11,32 @@ interface SocketCallbacks {
 
 export const useSocket = (callbacks: SocketCallbacks) => {
   const socketRef = useRef<Socket | null>(null);
+  const callbacksRef = useRef(callbacks);
+
+  // Mettre à jour les callbacks sans relancer le useEffect
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  }, [callbacks]);
 
   useEffect(() => {
-    socketRef.current = io(process.env.NODE_ENV === "development" ? "http://localhost:3000" : process.env.NEXT_PUBLIC_SOCKET_URL!);
+    const url = process.env.NODE_ENV === "development" 
+      ? "http://localhost:3000" 
+      : process.env.NEXT_PUBLIC_SOCKET_URL!;
+
+    socketRef.current = io(url, {
+      transports: ["websocket"], // Recommandé pour la production
+    });
 
     socketRef.current.on("connect", () => {
       console.log("✅ Socket.IO web connecté");
     });
 
     socketRef.current.on("object:created", (object: ObjectItem) => {
-      callbacks.onObjectCreated?.(object);
+      callbacksRef.current.onObjectCreated?.(object);
     });
 
     socketRef.current.on("object:deleted", (data: { id: string }) => {
-      callbacks.onObjectDeleted?.(data);
+      callbacksRef.current.onObjectDeleted?.(data);
     });
 
     return () => {
@@ -32,3 +44,4 @@ export const useSocket = (callbacks: SocketCallbacks) => {
     };
   }, []);
 };
+

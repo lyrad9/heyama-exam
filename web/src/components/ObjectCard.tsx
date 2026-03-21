@@ -3,16 +3,17 @@
 import { ObjectItem } from "@/src/types";
 import { Card, CardContent, CardFooter } from "@/src/components/ui/card";
 import { Button } from "@/src/components/ui/button";
-import { Trash2, Eye } from "lucide-react";
+import { Trash2, Eye, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
 interface Props {
   object: ObjectItem;
   onDelete: (id: string) => void;
+  isDeleting?: boolean;
 }
 
-export default function ObjectCard({ object, onDelete }: Props) {
+export default function ObjectCard({ object, onDelete, isDeleting }: Props) {
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-200 pt-0">
       <div className="relative h-48 w-full bg-slate-100">
@@ -51,9 +52,10 @@ export default function ObjectCard({ object, onDelete }: Props) {
         <Button
           variant="destructive"
           size="icon"
+          disabled={isDeleting}
           onClick={() => onDelete(object._id)}
         >
-          <Trash2 size={16} />
+          {isDeleting ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
         </Button>
       </CardFooter>
     </Card>

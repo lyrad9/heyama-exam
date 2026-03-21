@@ -1,38 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ObjectItem } from "@/src/types";
 import { getObjects, deleteObject } from "@/src/lib/api";
 import { useSocket } from "@/src/hooks/useSocket";
 import ObjectCard from "@/src/components/ObjectCard";
 import CreateObjectModal from "@/src/components/CreateObjectModal";
 import { Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export default function HomePage() {
-  const [objects, setObjects] = useState<ObjectItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    getObjects()
-      .then(setObjects)
-      .finally(() => setLoading(false));
-  }, []);
+  const { data: objects = [], isLoading: isFetching } = useQuery<ObjectItem[]>({
+    queryKey: ["objects"],
+    queryFn: getObjects,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteObject,
+    onSuccess: (_, id) => {
+      // Optionnel: on peut laisser le socket s'en charger 
+      // ou invalider manuellement pour être sûr
+      queryClient.setQueryData<ObjectItem[]>(["objects"], (prev) => 
+        prev?.filter((o) => o._id !== id)
+      );
+    },
+  });
 
   useSocket({
     onObjectCreated: (newObject) => {
-      setObjects((prev) => {
+      queryClient.setQueryData<ObjectItem[]>(["objects"], (prev) => {
+        if (!prev) return [newObject];
         if (prev.find((o) => o._id === newObject._id)) return prev;
         return [newObject, ...prev];
       });
     },
     onObjectDeleted: ({ id }) => {
-      setObjects((prev) => prev.filter((o) => o._id !== id));
+      queryClient.setQueryData<ObjectItem[]>(["objects"], (prev) => 
+        prev?.filter((o) => o._id !== id)
+      );
     },
   });
 
   const handleDelete = async (id: string) => {
     if (!confirm("Supprimer cet objet ?")) return;
-    await deleteObject(id);
+    deleteMutation.mutate(id);
   };
 
   return (
@@ -46,18 +58,20 @@ export default function HomePage() {
             <p className="text-sm text-slate-500">{objects.length} objet(s)</p>
           </div>
           <CreateObjectModal
-            onCreated={(obj) =>
-              setObjects((prev) => {
+            onCreated={(obj) => {
+              // On laisse le socket ou le queryClient s'en occuper
+              queryClient.setQueryData<ObjectItem[]>(["objects"], (prev) => {
+                if (!prev) return [obj];
                 if (prev.find((o) => o._id === obj._id)) return prev;
                 return [obj, ...prev];
-              })
-            }
+              });
+            }}
           />
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {loading ? (
+        {isFetching ? (
           <div className="flex justify-center py-20">
             <Loader2 className="animate-spin text-slate-400" size={40} />
           </div>
@@ -69,7 +83,12 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {objects.map((obj) => (
-              <ObjectCard key={obj._id} object={obj} onDelete={handleDelete} />
+              <ObjectCard 
+                key={obj._id} 
+                object={obj} 
+                onDelete={handleDelete} 
+                isDeleting={deleteMutation.status === 'pending' && deleteMutation.variables === obj._id}
+              />
             ))}
           </div>
         )}
