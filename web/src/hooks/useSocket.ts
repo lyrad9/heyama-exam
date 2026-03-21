@@ -1,0 +1,34 @@
+"use client";
+
+import { useEffect, useRef } from "react";
+import { io, Socket } from "socket.io-client";
+import { ObjectItem } from "@/src/types";
+
+interface SocketCallbacks {
+  onObjectCreated?: (object: ObjectItem) => void;
+  onObjectDeleted?: (data: { id: string }) => void;
+}
+
+export const useSocket = (callbacks: SocketCallbacks) => {
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    socketRef.current = io(process.env.NODE_ENV === "development" ? "http://localhost:3000" : process.env.NEXT_PUBLIC_SOCKET_URL!);
+
+    socketRef.current.on("connect", () => {
+      console.log("✅ Socket.IO web connecté");
+    });
+
+    socketRef.current.on("object:created", (object: ObjectItem) => {
+      callbacks.onObjectCreated?.(object);
+    });
+
+    socketRef.current.on("object:deleted", (data: { id: string }) => {
+      callbacks.onObjectDeleted?.(data);
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, []);
+};
