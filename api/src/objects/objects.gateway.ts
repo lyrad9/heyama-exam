@@ -3,10 +3,7 @@ import { Server } from 'socket.io';
 
 @WebSocketGateway({
   cors: {
-    origin: [
-      'http://localhost:3001',
-      'https://TON-PROJET.vercel.app',
-    ],
+    origin: ['http://localhost:3001', 'https://heyama-exam.vercel.app'],
   },
 })
 export class ObjectsGateway {
