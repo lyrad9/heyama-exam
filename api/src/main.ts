@@ -5,7 +5,12 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({
-    origin: ['http://localhost:3001', 'https://heyama-exam.vercel.app'],
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://heyama-exam.vercel.app',
+      'https://www.heyama-exam.vercel.app',
+    ],
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
     credentials: false,
   });
