@@ -6,6 +6,6 @@ const IS_PRODUCTION = false; // passer à true avant eas build
 
 export const API_URL = IS_PRODUCTION
   ? 'https://dynamic-integrity-production-8091.up.railway.app'
-  : 'http://172.20.10.2:3000'; // IP locale détectée (192.168.1.20)
+  : 'http://192.168.100.9'; // IP locale détectée (192.168.1.20)
 
 export const SOCKET_URL = API_URL;
