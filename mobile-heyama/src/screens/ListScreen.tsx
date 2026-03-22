@@ -25,6 +25,12 @@ export default function ListScreen() {
   });
 
   React.useEffect(() => {
+    if (objects) {
+      console.log("📦 Objets reçus sur mobile (JSON):", JSON.stringify(objects, null, 2));
+    }
+  }, [objects]);
+
+  React.useEffect(() => {
     if (error) {
       console.error("❌ Erreur de récupération:", error);
       Alert.alert('Erreur', 'Connexion impossible à l\'API. Vérifie ton URL et ta connexion.');

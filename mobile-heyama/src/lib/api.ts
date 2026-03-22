@@ -28,7 +28,6 @@ export const createObject = async (
 
   const { data } = await api.post('/objects', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
-    transformRequest: (data) => data, // Utile pour certaines versions d'Axios/RN
   });
   return data;
 };
