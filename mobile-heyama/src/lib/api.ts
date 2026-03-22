@@ -1,6 +1,6 @@
 import axios from 'axios';
-import { API_URL } from '../config';
-import { ObjectItem } from '../types';
+import { API_URL } from '@/config';
+import { ObjectItem } from '@/types';
 
 const api = axios.create({ baseURL: API_URL });
 
@@ -28,6 +28,7 @@ export const createObject = async (
 
   const { data } = await api.post('/objects', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
+    transformRequest: (data) => data, // Utile pour certaines versions d'Axios/RN
   });
   return data;
 };

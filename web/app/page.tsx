@@ -5,8 +5,10 @@ import { getObjects, deleteObject } from "@/src/lib/api";
 import { useSocket } from "@/src/hooks/useSocket";
 import ObjectCard from "@/src/components/ObjectCard";
 import CreateObjectModal from "@/src/components/CreateObjectModal";
-import { Loader2 } from "lucide-react";
+import ObjectCardSkeleton from "@/src/components/ObjectCardSkeleton";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/src/components/ui/button";
+import { Eye } from "lucide-react";
 
 export default function HomePage() {
   const queryClient = useQueryClient();
@@ -18,12 +20,24 @@ export default function HomePage() {
 
   const deleteMutation = useMutation({
     mutationFn: deleteObject,
-    onSuccess: (_, id) => {
-      // Optionnel: on peut laisser le socket s'en charger 
-      // ou invalider manuellement pour être sûr
-      queryClient.setQueryData<ObjectItem[]>(["objects"], (prev) => 
-        prev?.filter((o) => o._id !== id)
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ["objects"] });
+      const previousObjects = queryClient.getQueryData<ObjectItem[]>([
+        "objects",
+      ]);
+      queryClient.setQueryData<ObjectItem[]>(["objects"], (prev) =>
+        prev?.filter((o) => o._id !== id),
       );
+      return { previousObjects };
+    },
+    onError: (_err, _id, context) => {
+      if (context?.previousObjects) {
+        queryClient.setQueryData(["objects"], context.previousObjects);
+      }
+      alert("Erreur lors de la suppression. Réessaie.");
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["objects"] });
     },
   });
 
@@ -36,8 +50,8 @@ export default function HomePage() {
       });
     },
     onObjectDeleted: ({ id }) => {
-      queryClient.setQueryData<ObjectItem[]>(["objects"], (prev) => 
-        prev?.filter((o) => o._id !== id)
+      queryClient.setQueryData<ObjectItem[]>(["objects"], (prev) =>
+        prev?.filter((o) => o._id !== id),
       );
     },
   });
@@ -57,37 +71,46 @@ export default function HomePage() {
             </h1>
             <p className="text-sm text-slate-500">{objects.length} objet(s)</p>
           </div>
-          <CreateObjectModal
-            onCreated={(obj) => {
-              // On laisse le socket ou le queryClient s'en occuper
-              queryClient.setQueryData<ObjectItem[]>(["objects"], (prev) => {
-                if (!prev) return [obj];
-                if (prev.find((o) => o._id === obj._id)) return prev;
-                return [obj, ...prev];
-              });
-            }}
-          />
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="gap-2 shrink-0"
+              onClick={() =>
+                document
+                  .getElementById("objects-list")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
+            >
+              Voir les objets
+            </Button>
+            <CreateObjectModal />
+          </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div id="objects-list" className="max-w-6xl mx-auto px-4 py-8">
         {isFetching ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="animate-spin text-slate-400" size={40} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {[...Array(8)].map((_, i) => (
+              <ObjectCardSkeleton key={i} />
+            ))}
           </div>
         ) : objects.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">
+          <div className="text-center py-20 text-slate-400 font-sans">
             <p className="text-lg font-medium">Aucun objet pour l'instant</p>
             <p className="text-sm mt-1">Crée ton premier objet !</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {objects.map((obj) => (
-              <ObjectCard 
-                key={obj._id} 
-                object={obj} 
-                onDelete={handleDelete} 
-                isDeleting={deleteMutation.status === 'pending' && deleteMutation.variables === obj._id}
+              <ObjectCard
+                key={obj._id}
+                object={obj}
+                onDelete={handleDelete}
+                isDeleting={
+                  deleteMutation.status === "pending" &&
+                  deleteMutation.variables === obj._id
+                }
               />
             ))}
           </div>
