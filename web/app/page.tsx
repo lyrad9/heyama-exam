@@ -72,17 +72,6 @@ export default function HomePage() {
             <p className="text-sm text-slate-500">{objects.length} objet(s)</p>
           </div>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="gap-2 shrink-0"
-              onClick={() =>
-                document
-                  .getElementById("objects-list")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-            >
-              Voir les objets
-            </Button>
             <CreateObjectModal />
           </div>
         </div>
