@@ -52,8 +52,10 @@ export default function CreateObjectModal({ onCreated }: Props) {
       // Met à jour le cache global de TanStack Query
       queryClient.setQueryData<ObjectItem[]>(["objects"], (prev) => {
         if (!prev) return [created];
+        if (prev.find(o => o._id === created._id)) return prev;
         return [created, ...prev];
       });
+      queryClient.invalidateQueries({ queryKey: ["objects"] });
       
       onCreated?.(created);
       handleClose();

@@ -25,7 +25,9 @@ export const createObject = async (
   formData.append("description", description);
   formData.append("image", imageFile);
   console.log("formData", formData)
-  const { data } = await api.post("/objects", formData);
+  const { data } = await api.post("/objects", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
   return data;
 };
 

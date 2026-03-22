@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ObjectItem } from "@/src/types";
 import { getObject, deleteObject } from "@/src/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/src/components/ui/button";
 import { ArrowLeft, Trash2, Loader2 } from "lucide-react";
 import Image from "next/image";
@@ -11,22 +11,31 @@ import Image from "next/image";
 export default function ObjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [object, setObject] = useState<ObjectItem | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: object, isLoading, error } = useQuery<ObjectItem>({
+    queryKey: ["object", id],
+    queryFn: () => getObject(id),
+    enabled: !!id,
+  });
 
-  useEffect(() => {
-    getObject(id)
-      .then(setObject)
-      .finally(() => setLoading(false));
-  }, [id]);
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteObject(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["objects"] });
+      router.push("/");
+    },
+    onError: (err) => {
+      console.error("❌ Erreur suppression:", err);
+      alert("Erreur lors de la suppression. Réessaie.");
+    },
+  });
 
   const handleDelete = async () => {
     if (!confirm("Supprimer cet objet ?")) return;
-    await deleteObject(id);
-    router.push("/");
+    deleteMutation.mutate();
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <Loader2 className="animate-spin text-slate-400" size={40} />
